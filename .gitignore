@@ -8,3 +8,8 @@ compiled/
 .DS_Store
 *.bak
 TAGS
+.unison/
+*.zo
+*~
+.@__thumb/
+
