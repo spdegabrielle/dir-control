@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/gui/base
          racket/class)
+(provide dir-control%)
 
 (define gap 15) ; the number of pixels to increase x to seperate segments
 (define left-margin 8); margin between left of segment and text start
@@ -8,21 +9,17 @@
 
 (define dir-control%
   (class canvas%
-    (inherit refresh get-dc)
+    (inherit refresh get-dc popup-menu set-canvas-background)
     (init [callback (λ (ce e) (void))])
     (define path-elements '())
-    (define mouse-pos 10000)
-
+    (define current-hover #f)
+    (define mouse-pos 0)
     (define/public-final (set-path _path)
       (set! path-elements (explode-path (simplify-path _path)))
       (refresh))
 
     (define (highlight-if-hover mouse-xpos) (set! mouse-pos mouse-xpos))
-    (define (select-action mouse-xpos) 
-      (displayln mouse-xpos))
 
-
-    
     (define/override (on-paint)
       (define dc (get-dc))
       (define old-brush (send dc get-brush))
@@ -31,63 +28,108 @@
       (send dc set-brush "silver" 'solid)
       (send dc set-pen "black" 1 'solid)
       
-      (for/fold ([x 0])
+      (for/fold ([xoffset 0])
                 ([pe (in-list path-elements)])
         (define (draw-background-segment
                  a-dc side-width text-height xoffset yoffset colour)
+          (define (segment-outline-list height side-width [indent (/ height 3)])
+            `((0 . 0)
+              (,side-width . 0)
+              (,(+ side-width indent) . ,(/ height 2))
+              (,side-width . ,height)
+              (0 . ,height)
+              (,indent . ,(/ height 2)))
+
+            #;(list
+               (cons 0 0)
+               (cons side-width 0)
+               (cons (+ side-width indent) (/ height 2))
+               (cons side-width height)
+               (cons 0 height)
+               (cons indent (/ height 2))))
+
           (send dc set-brush colour 'solid)
           (define height (+ text-height (/ text-height 5)))
           (send a-dc draw-polygon
-                (list
-                 (cons 0 0)
-                 (cons side-width 0)
-                 (cons (+ side-width 5) (/ height 2))
-                 (cons side-width height)
-                 (cons 0 height)
-                 (cons 5 (/ height 2)))
-                xoffset	 	 	 	 
-                yoffset
-                ))
-        (define s
+                (segment-outline-list height side-width)
+                xoffset yoffset))
+        (define path-element-string
           (cond
             [(relative-path? pe)
              (path-element->string pe)]
             [else
              ;; should be the first one; maybe do this differently?
              (path->string pe)]))
-        (define-values (pw ph pd pa) (send dc get-text-extent s))
-        (draw-background-segment dc
-                                 (+ pw 10) ; 
-                                 ph ; text height
-                                 x ; x offset
-                                 0 ; y offset
-                                 (if (and (>= mouse-pos x)(<= mouse-pos (+ x pw 10))) "orange" "silver")
-
-                                 )
+        (define-values (width font-height pd pa)
+          (send dc get-text-extent path-element-string))
+        (draw-background-segment dc (+ width 10) font-height xoffset 0 ; y offset
+                                 (if (and (>= mouse-pos xoffset) (<= mouse-pos (+ xoffset width 10)))
+                                     "orange" ; highlight on hover
+                                     "silver"))
         (cond
-          [(= x 0)
-           (send dc draw-text s (+ x left-margin) 0)
-           (+ x gap pw)]
+          [(= xoffset 0)
+           (send dc draw-text path-element-string (+ xoffset left-margin) 0)
+           (+ xoffset gap width)]
           [else
-           (send dc draw-text s (+ x left-margin) 0)
-           (+ x gap pw)]))
+           (send dc draw-text path-element-string (+ xoffset left-margin) 0)
+           (+ xoffset gap width)]))
       (send dc set-brush old-brush)
       (send dc set-pen old-pen))
+    
+    (super-new [style '()])
+    
+    (set-canvas-background (make-object color% "Lavender"))
 
 
+    
+    (define (select-action mouse-xpos)
+      (send this popup-menu p mouse-xpos 10)
+      (set! current-hover mouse-xpos))
+    
     (define/override (on-event me)
       (define mouse-xpos (send me get-x))
       (case (send me get-event-type)
         [(motion) (highlight-if-hover mouse-xpos)]
         [(left-down) (select-action mouse-xpos)])
       (on-paint))
-    (super-new [style '()])
+
     (send (get-dc) set-font small-control-font)))
 
 
 (module+ main
   (define f (new frame% [width 400] [height 100] [label ""]))
   (define c (new dir-control% [parent f]))
+  (define pp (new horizontal-panel% [parent f]))
+
   (send c set-path (collection-file-path "base.rkt" "racket"))
   (send c set-path (current-directory-for-user))
   (send f show #t))
+
+#;(define (make-menu dir)
+    (define (my-directory-list dir #:hidden [hidden #t])
+      (if (not hidden)
+          (filter (λ (p) (if (equal? (string-ref (path->string p) 0) #\.) #f #t))
+                  (directory-list dir))
+          (directory-list dir)))
+
+
+
+    )
+(define p (new popup-menu% [title "hi title"]))
+(define m1 
+  (new menu-item%	 
+       [label "jjj"]	 
+       [parent p]	 
+       [callback (λ (i j) void)]))
+  
+(define m2 
+  (new menu-item%	 
+       [label "sss"]	 
+       [parent p]	 
+       [callback (λ (i j) void)]))
+  
+(define m3 
+  (new menu-item%	 
+       [label "ddd"]	 
+       [parent p]	 
+       [callback (λ (i j) void)]))
