@@ -3,12 +3,12 @@
          racket/class)
 (provide dir-control%)
 ; path; listof paths
-(define (parent-paths path)
-(define-values (base name dir) (split-path path))
-  (cond
-    [(equal? base #f) path]
-    [])
-  )
+;(define (parent-paths path)
+;(define-values (base name dir) (split-path path))
+;  (cond
+;    [(equal? base #f) path]
+;    [])
+;  )
 
 
 (define dir-control%
