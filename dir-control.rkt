@@ -10,17 +10,26 @@
 ;    [])
 ;  )
 
+(define dir-control-event%
+  (class event%
+    (init-field [path-index #f])
+    (super-new)))
 
 (define dir-control%
   (class canvas%
     (inherit refresh get-dc popup-menu set-canvas-background)
-    (init [callback (λ (ce e) (void))])
+    (init [callback (λ (ce e)
+                      (println (list-ref (send ce get-path-elements)
+                                         (get-field path-index e)))
+                      (flush-output))])
     (define path-elements '())
+    (define path-index #f)
     (define current-hover #f)
     (define mouse-pos 0)
     (define gap 15) ; the number of pixels to increase x to seperate segments
     (define left-margin 8); margin between left of segment and text start
     (define highlighted "orange")
+    (define/public-final (get-path-elements) path-elements)
     (define/public-final (set-path _path)
       (set! path-elements (explode-path (simplify-path _path)))
       (refresh))
@@ -36,7 +45,7 @@
       (send dc set-pen "black" 1 'solid)
       
       (for/fold ([xoffset 0])
-                ([pe (in-list path-elements)])
+                ([(pe i) (in-indexed path-elements)])
         (define (draw-background-segment
                  a-dc side-width text-height xoffset yoffset colour)
           (define (segment-outline-list height side [indent (/ height 3)])
@@ -63,9 +72,10 @@
           (send dc get-text-extent path-element-string))
         (draw-background-segment
          dc (+ width 10) font-height xoffset 0 ; y offset
-         (if (and (>= mouse-pos xoffset) (<= mouse-pos (+ xoffset width 10)))
-             highlighted ; highlight on hover
-             "Gainsboro"))
+         (cond [(<= xoffset mouse-pos (+ xoffset width 10)) (set! path-index i)
+                                                            ; highlight on hover
+                                                            highlighted]
+               [else "Gainsboro"]))
         (cond
           [(= xoffset 0)
            (send dc draw-text path-element-string (+ xoffset left-margin) 0)
@@ -81,15 +91,14 @@
     (set-canvas-background (make-object color% "WhiteSmoke"))
 
     (define (select-action mouse-xpos)
-      (send this popup-menu p mouse-xpos 10)
-      (set! current-hover mouse-xpos))
+      (callback this (new dir-control-event% [path-index path-index])))
     
     (define/override (on-event me)
       (define mouse-xpos (send me get-x))
       (case (send me get-event-type)
-        [(motion) (highlight-if-hover mouse-xpos)]
-        [(left-down) (select-action mouse-xpos)])
-      (on-paint))
+        [(motion) (highlight-if-hover mouse-xpos)
+                  (refresh)]
+        [(left-down) (select-action mouse-xpos)]))
 
     (send (get-dc) set-font small-control-font)))
 
