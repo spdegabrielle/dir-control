@@ -2,8 +2,8 @@
 (require racket/gui/base
          racket/class)
 (provide dir-control%)
-; path; listof paths
 
+;; take path and return list of parent paths
 (define (parent-paths path)
   (define-values (base name dir) (split-path path))
   (cond
