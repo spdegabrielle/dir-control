@@ -2,8 +2,6 @@
 (require racket/gui/base
          racket/class)
 (provide dir-control%)
-; path; listof paths
-
 
 (define dir-control-event%
   (class event%
@@ -15,10 +13,8 @@
   (cond
     [(equal? base #f) (list path)]
     [else (cons path (parent-paths base))]))
-
-
+    
 (parent-paths (current-directory-for-user))
-
 
 (define dir-control%
   (class canvas%
