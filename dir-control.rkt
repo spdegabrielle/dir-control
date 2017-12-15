@@ -3,17 +3,22 @@
          racket/class)
 (provide dir-control%)
 ; path; listof paths
-;(define (parent-paths path)
-;(define-values (base name dir) (split-path path))
-;  (cond
-;    [(equal? base #f) path]
-;    [])
-;  )
+
 
 (define dir-control-event%
   (class event%
     (init-field [path-index #f])
     (super-new)))
+
+(define (parent-paths path)
+  (define-values (base name dir) (split-path path))
+  (cond
+    [(equal? base #f) (list path)]
+    [else (cons path (parent-paths base))]))
+
+
+(parent-paths (current-directory-for-user))
+
 
 (define dir-control%
   (class canvas%
