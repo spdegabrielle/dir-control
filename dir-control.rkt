@@ -2,7 +2,7 @@
 (require racket/gui/base
          racket/class
          racket/list)
-(provide dir-control%)
+(provide dir-control% path-alist)
 ;;
 
 (define (my-directory-list dir #:hidden [hidden #t])
@@ -35,7 +35,6 @@
                       (flush-output))])
     (define path-elements '()) ; alist ordered list of ordered pairs
     (define path-index #f)
-    ;(define current-hover #f)
     (define mouse-pos 0)
     (define gap 15) ; the number of pixels to increase x to seperate segments
     (define left-margin 8) ; margin between left of segment and text start
@@ -107,35 +106,37 @@
         [(left-down) (select-action mouse-xpos)])
       (super on-event me))
 
-    (send (get-dc) set-font small-control-font)))
+    (send (get-dc) set-font normal-control-font)))
 
 
 (module+ main
   (define f (new frame% [width 400] [height 100] [label ""]))
-  (define dir-control (new dir-control% [parent f] [callback (λ (ce e)
-                      (println (list-ref (send ce get-path-elements)
-                                         (get-field path-index e)))
-                      (flush-output))]))
+  (define dir-control (new dir-control%
+                           [parent f]
+                           [callback (λ (ce e)
+                                       (println (list-ref (send ce get-path-elements)
+                                                          (get-field path-index e)))
+                                       (flush-output))]))
   (define pp (new horizontal-panel% [parent f]))
   (send dir-control set-path (path-alist (current-directory-for-user)))
   (send f show #t)
 
-(define p (new popup-menu% [title "hi title"]))
+  (define p (new popup-menu% [title "hi title"]))
 
-(define m1 
-  (new menu-item%	 
-       [label "jjj"]	 
-       [parent p]	 
-       [callback (λ (i j) void)]))
+  (define m1 
+    (new menu-item%	 
+         [label "jjj"]	 
+         [parent p]	 
+         [callback (λ (i j) void)]))
   
-(define m2 
-  (new menu-item%	 
-       [label "sss"]	 
-       [parent p]	 
-       [callback (λ (i j) void)]))
+  (define m2 
+    (new menu-item%	 
+         [label "sss"]	 
+         [parent p]	 
+         [callback (λ (i j) void)]))
   
-(define m3 
-  (new menu-item%	 
-       [label "ddd"]	 
-       [parent p]	 
-       [callback (λ (i j) void)])))
+  (define m3 
+    (new menu-item%	 
+         [label "ddd"]	 
+         [parent p]	 
+         [callback (λ (i j) void)])))
