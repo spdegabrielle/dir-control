@@ -92,7 +92,7 @@
       (send dc set-brush old-brush)
       (send dc set-pen old-pen))
     
-    (super-new [style '()])
+    (super-new [style '()][stretchable-height #f][min-height 30])
     
     (set-canvas-background (make-object color% "WhiteSmoke"))
 
