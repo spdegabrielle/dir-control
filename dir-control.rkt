@@ -55,6 +55,7 @@
         (         ,indent . ,(/ height 2))))
     (define/override (on-paint)
       (define dc (get-dc))
+      (send dc set-smoothing 'aligned)
       (define old-brush (send dc get-brush))
       (define old-pen (send dc get-pen))
 
