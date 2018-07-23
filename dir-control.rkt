@@ -33,18 +33,19 @@
                       (println (list-ref (send ce get-path-elements)
                                          (get-field path-index e)))
                       (flush-output))])
+    (field [highlighted "orange"])
     (define path-elements '()) ; alist ordered list of ordered pairs
     (define path-index #f)
-    (define mouse-pos 0)
+    (define mouse-pos  (new mouse-event% [event-type 'motion]))
     (define gap 15) ; the number of pixels to increase x to seperate segments
     (define left-margin 8) ; margin between left of segment and text start
-    (define highlighted "orange")
     (define/public-final (get-path-elements) path-elements)
     (define/public-final (set-path _path)
       (set! path-elements _path)
       (refresh))
+    
 
-    (define (highlight-if-hover mouse-xpos) (set! mouse-pos mouse-xpos))
+    (define (highlight-if-hover v) (set! mouse-pos v))
     ;; segment-outline-list : height side indent -> listof point
     (define (segment-outline-list height side [indent (/ height 3)])
       `((               0 . 0)
@@ -56,6 +57,7 @@
     (define/override (on-paint)
       (define dc (get-dc))
       (send dc set-smoothing 'aligned)
+      (send dc set-origin 0 5)
       (define old-brush (send dc get-brush))
       (define old-pen (send dc get-pen))
 
@@ -79,7 +81,8 @@
         
         (draw-background-segment
          dc (+ width 10) font-height xoffset 0 ; y offset
-         (cond [(<= xoffset mouse-pos (+ xoffset width 10))
+         (cond [(and (<= xoffset (send mouse-pos get-x) (+ xoffset width 10))
+                     (<= 0 (send mouse-pos get-y) (* 1.2 font-height)))
                 (set! path-index i) highlighted]
                [else "Gainsboro"]))
         (cond
@@ -100,11 +103,11 @@
       (callback this (new dir-control-event% [path-index path-index])))
     
     (define/override (on-event me)
-      (define mouse-xpos (send me get-x))
+      (send me set-y (- (send me get-y) 5))
       (case (send me get-event-type)
-        [(motion) (highlight-if-hover mouse-xpos)
+        [(motion) (highlight-if-hover me)
                   (refresh)]
-        [(left-down) (select-action mouse-xpos)])
+        [(left-down) (select-action (send mouse-pos get-x))])
       (super on-event me))
 
     (send (get-dc) set-font normal-control-font)))
